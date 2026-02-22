@@ -1,2 +1,2 @@
-# Rental_Proofer
-Rental proofs storing app
+# Rental Proofer
+Rental proofs storing Android app in Kotlin
