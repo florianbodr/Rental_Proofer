@@ -164,7 +164,7 @@ fun SessionFormScreen(
                         if (!isLocationEnabled(context)) {
                             showLocationDialog = true
                         } else {
-                            locationPermLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
+                            locationPermLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
                         }
                     }
                 ) {
