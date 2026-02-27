@@ -9,6 +9,8 @@ import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.animation.core.Animatable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -33,6 +35,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,6 +45,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import kotlinx.coroutines.launch
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.rentalproofer.data.model.PhotoType
 
@@ -60,6 +64,8 @@ fun CameraScreen(
     val photosTaken by viewModel.photosTakenCount.collectAsState()
     var hasPermission by remember { mutableStateOf(false) }
     var imageCapture by remember { mutableStateOf<ImageCapture?>(null) }
+    val flashAlpha = remember { Animatable(0f) }
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(initialPhotoType) {
         viewModel.setPhotoType(
@@ -151,6 +157,10 @@ fun CameraScreen(
                                 object : ImageCapture.OnImageSavedCallback {
                                     override fun onImageSaved(output: ImageCapture.OutputFileResults) {
                                         viewModel.savePhoto(sessionId, photoFile.absolutePath)
+                                        scope.launch {
+                                            flashAlpha.snapTo(1f)
+                                            flashAlpha.animateTo(0f)
+                                        }
                                     }
                                     override fun onError(exc: ImageCaptureException) {
                                         exc.printStackTrace()
@@ -158,6 +168,14 @@ fun CameraScreen(
                                 }
                             )
                         }
+                    )
+                }
+                // Flash overlay
+                if (flashAlpha.value > 0f) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.White.copy(alpha = flashAlpha.value))
                     )
                 }
             } else {
