@@ -5,6 +5,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import com.example.rentalproofer.data.model.RentalPhoto
 import kotlinx.coroutines.flow.Flow
 
@@ -18,6 +19,9 @@ interface RentalPhotoDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPhoto(photo: RentalPhoto): Long
+
+    @Update
+    suspend fun updatePhoto(photo: RentalPhoto)
 
     @Delete
     suspend fun deletePhoto(photo: RentalPhoto)

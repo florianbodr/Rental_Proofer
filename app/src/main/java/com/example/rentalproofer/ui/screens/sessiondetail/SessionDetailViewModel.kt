@@ -70,6 +70,22 @@ class SessionDetailViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
+    fun updateBeforeDate(millis: Long) {
+        viewModelScope.launch {
+            state.value.session?.let { session ->
+                repository.updateSession(session.copy(beforeDate = millis))
+            }
+        }
+    }
+
+    fun updateAfterDate(millis: Long) {
+        viewModelScope.launch {
+            state.value.session?.let { session ->
+                repository.updateSession(session.copy(afterDate = millis))
+            }
+        }
+    }
+
     fun exportZip(context: Context, selectedIds: Set<Long>, allPhotos: List<RentalPhoto>) {
         viewModelScope.launch {
             val files = allPhotos

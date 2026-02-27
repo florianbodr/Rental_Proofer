@@ -64,7 +64,7 @@ fun AppNavGraph() {
             CameraScreen(
                 sessionId = sessionId,
                 initialPhotoType = photoType,
-                onPhotoCaptured = { navController.popBackStack() },
+                onDone = { navController.popBackStack() },
                 onCancel = { navController.popBackStack() }
             )
         }

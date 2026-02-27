@@ -6,6 +6,7 @@ import android.content.Intent
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.rentalproofer.RentalProoferApp
+import com.example.rentalproofer.data.model.PhotoType
 import com.example.rentalproofer.data.model.RentalPhoto
 import com.example.rentalproofer.util.FileUtil
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,6 +24,20 @@ class PhotoViewerViewModel(application: Application) : AndroidViewModel(applicat
         viewModelScope.launch {
             _photo.value = repository.getPhotoById(photoId)
         }
+    }
+
+    fun updatePhotoType(newType: PhotoType) {
+        val p = _photo.value ?: return
+        val updated = p.copy(type = newType)
+        _photo.value = updated
+        viewModelScope.launch { repository.updatePhoto(updated) }
+    }
+
+    fun updatePhotoCapturedAt(millis: Long) {
+        val p = _photo.value ?: return
+        val updated = p.copy(capturedAt = millis)
+        _photo.value = updated
+        viewModelScope.launch { repository.updatePhoto(updated) }
     }
 
     fun sharePhoto(context: Context) {

@@ -20,6 +20,8 @@ class RentalRepository(
 
     suspend fun insertPhoto(photo: RentalPhoto): Long = photoDao.insertPhoto(photo)
 
+    suspend fun updatePhoto(photo: RentalPhoto) = photoDao.updatePhoto(photo)
+
     suspend fun deletePhoto(photo: RentalPhoto) {
         File(photo.filePath).delete()
         photoDao.deletePhoto(photo)

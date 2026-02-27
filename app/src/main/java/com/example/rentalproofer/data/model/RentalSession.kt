@@ -11,5 +11,8 @@ data class RentalSession(
     val notes: String,
     val latitude: Double?,
     val longitude: Double?,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val beforeDate: Long? = null,
+    val afterDate: Long? = null,
+    val address: String? = null
 )

@@ -9,19 +9,21 @@ import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Camera
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -34,6 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
@@ -47,13 +50,14 @@ import com.example.rentalproofer.data.model.PhotoType
 fun CameraScreen(
     sessionId: Long,
     initialPhotoType: String,
-    onPhotoCaptured: () -> Unit,
+    onDone: () -> Unit,
     onCancel: () -> Unit,
     viewModel: CameraViewModel = viewModel()
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val photoType by viewModel.photoType.collectAsState()
+    val photosTaken by viewModel.photosTakenCount.collectAsState()
     var hasPermission by remember { mutableStateOf(false) }
     var imageCapture by remember { mutableStateOf<ImageCapture?>(null) }
 
@@ -72,13 +76,26 @@ fun CameraScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (photoType == PhotoType.BEFORE) "Before Photo" else "After Photo") },
+                title = {
+                    if (photosTaken > 0) {
+                        Text("$photosTaken photo(s) taken")
+                    } else {
+                        Text(if (photoType == PhotoType.BEFORE) "Before Photo" else "After Photo")
+                    }
+                },
                 navigationIcon = {
-                    IconButton(onClick = onCancel) { Icon(Icons.Default.Close, "Cancel") }
+                    IconButton(onClick = { if (photosTaken > 0) onDone() else onCancel() }) {
+                        Icon(Icons.Default.Close, "Close")
+                    }
                 },
                 actions = {
                     TextButton(onClick = { viewModel.togglePhotoType() }) {
                         Text(if (photoType == PhotoType.BEFORE) "Switch to After" else "Switch to Before")
+                    }
+                    if (photosTaken > 0) {
+                        TextButton(onClick = onDone) {
+                            Text("Done ($photosTaken)")
+                        }
                     }
                 }
             )
@@ -123,9 +140,9 @@ fun CameraScreen(
                         .padding(32.dp),
                     contentAlignment = Alignment.BottomCenter
                 ) {
-                    FloatingActionButton(
+                    ShutterButton(
                         onClick = {
-                            val capture = imageCapture ?: return@FloatingActionButton
+                            val capture = imageCapture ?: return@ShutterButton
                             val photoFile = viewModel.createPhotoFile(context, sessionId)
                             val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
                             capture.takePicture(
@@ -134,18 +151,14 @@ fun CameraScreen(
                                 object : ImageCapture.OnImageSavedCallback {
                                     override fun onImageSaved(output: ImageCapture.OutputFileResults) {
                                         viewModel.savePhoto(sessionId, photoFile.absolutePath)
-                                        onPhotoCaptured()
                                     }
                                     override fun onError(exc: ImageCaptureException) {
                                         exc.printStackTrace()
                                     }
                                 }
                             )
-                        },
-                        containerColor = MaterialTheme.colorScheme.primary
-                    ) {
-                        Icon(Icons.Default.Camera, "Capture", modifier = Modifier.size(32.dp))
-                    }
+                        }
+                    )
                 }
             } else {
                 Box(
@@ -156,5 +169,22 @@ fun CameraScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ShutterButton(onClick: () -> Unit) {
+    IconButton(
+        onClick = onClick,
+        modifier = Modifier
+            .size(72.dp)
+            .border(4.dp, Color.White, CircleShape),
+        colors = IconButtonDefaults.iconButtonColors(containerColor = Color.Transparent)
+    ) {
+        Surface(
+            modifier = Modifier.size(58.dp),
+            shape = CircleShape,
+            color = Color.White
+        ) {}
     }
 }

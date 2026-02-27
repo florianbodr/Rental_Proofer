@@ -17,6 +17,8 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
     private val repository = (application as RentalProoferApp).repository
     private val _photoType = MutableStateFlow(PhotoType.BEFORE)
     val photoType: StateFlow<PhotoType> = _photoType.asStateFlow()
+    private val _photosTakenCount = MutableStateFlow(0)
+    val photosTakenCount: StateFlow<Int> = _photosTakenCount.asStateFlow()
 
     fun setPhotoType(type: PhotoType) { _photoType.value = type }
 
@@ -32,6 +34,7 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
             repository.insertPhoto(
                 RentalPhoto(sessionId = sessionId, filePath = filePath, type = _photoType.value)
             )
+            _photosTakenCount.value++
         }
     }
 }

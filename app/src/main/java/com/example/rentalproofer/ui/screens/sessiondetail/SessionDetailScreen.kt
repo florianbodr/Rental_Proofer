@@ -19,8 +19,12 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -31,7 +35,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -50,6 +58,11 @@ import coil.compose.AsyncImage
 import com.example.rentalproofer.data.model.PhotoType
 import com.example.rentalproofer.data.model.RentalPhoto
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,8 +78,74 @@ fun SessionDetailScreen(
     var addPhotoMenuExpanded by remember { mutableStateOf(false) }
     val inSelectionMode = state.selectedPhotoIds.isNotEmpty()
     val allPhotos = state.beforePhotos + state.afterPhotos
+    val dateTimeFormat = remember { SimpleDateFormat("MMM d, yyyy 'at' h:mm a", Locale.getDefault()) }
+
+    // Date/time picker state
+    var editingDateField by remember { mutableStateOf<String?>(null) } // "before" or "after"
+    var pendingDateMillis by remember { mutableStateOf<Long?>(null) }
 
     LaunchedEffect(sessionId) { viewModel.setSessionId(sessionId) }
+
+    // Date picker dialog
+    if (editingDateField != null && pendingDateMillis == null) {
+        val currentValue = if (editingDateField == "before") state.session?.beforeDate else state.session?.afterDate
+        val datePickerState = rememberDatePickerState(initialSelectedDateMillis = currentValue ?: System.currentTimeMillis())
+        DatePickerDialog(
+            onDismissRequest = { editingDateField = null },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { pendingDateMillis = it }
+                        ?: run { editingDateField = null }
+                }) { Text("Next") }
+            },
+            dismissButton = {
+                TextButton(onClick = { editingDateField = null }) { Text("Cancel") }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    // Time picker dialog (after date is picked)
+    if (editingDateField != null && pendingDateMillis != null) {
+        val currentValue = if (editingDateField == "before") state.session?.beforeDate else state.session?.afterDate
+        val cal = Calendar.getInstance().apply { timeInMillis = currentValue ?: System.currentTimeMillis() }
+        val timePickerState = rememberTimePickerState(
+            initialHour = cal.get(Calendar.HOUR_OF_DAY),
+            initialMinute = cal.get(Calendar.MINUTE)
+        )
+        AlertDialog(
+            onDismissRequest = { pendingDateMillis = null; editingDateField = null },
+            title = { Text("Select Time") },
+            text = { TimePicker(state = timePickerState) },
+            confirmButton = {
+                TextButton(onClick = {
+                    val dateCal = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+                        timeInMillis = pendingDateMillis!!
+                    }
+                    val combined = Calendar.getInstance().apply {
+                        set(Calendar.YEAR, dateCal.get(Calendar.YEAR))
+                        set(Calendar.MONTH, dateCal.get(Calendar.MONTH))
+                        set(Calendar.DAY_OF_MONTH, dateCal.get(Calendar.DAY_OF_MONTH))
+                        set(Calendar.HOUR_OF_DAY, timePickerState.hour)
+                        set(Calendar.MINUTE, timePickerState.minute)
+                        set(Calendar.SECOND, 0)
+                        set(Calendar.MILLISECOND, 0)
+                    }
+                    if (editingDateField == "before") {
+                        viewModel.updateBeforeDate(combined.timeInMillis)
+                    } else {
+                        viewModel.updateAfterDate(combined.timeInMillis)
+                    }
+                    pendingDateMillis = null
+                    editingDateField = null
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingDateMillis = null; editingDateField = null }) { Text("Cancel") }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -142,14 +221,34 @@ fun SessionDetailScreen(
                             Spacer(Modifier.height(4.dp))
                             Text(session.notes, style = MaterialTheme.typography.bodyMedium)
                         }
-                        if (session.latitude != null && session.longitude != null) {
+                        val locationDisplay = when {
+                            session.address != null -> session.address
+                            session.latitude != null && session.longitude != null ->
+                                "%.6f, %.6f".format(session.latitude, session.longitude)
+                            else -> null
+                        }
+                        if (locationDisplay != null) {
                             Spacer(Modifier.height(4.dp))
                             Text(
-                                "%.6f, %.6f".format(session.latitude, session.longitude),
+                                locationDisplay,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
+                        Spacer(Modifier.height(8.dp))
+                        DateRow(
+                            label = "Before",
+                            millis = session.beforeDate,
+                            format = dateTimeFormat,
+                            onEdit = { editingDateField = "before" }
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        DateRow(
+                            label = "After",
+                            millis = session.afterDate,
+                            format = dateTimeFormat,
+                            onEdit = { editingDateField = "after" }
+                        )
                     }
                 }
             }
@@ -177,6 +276,45 @@ fun SessionDetailScreen(
             )
 
             Spacer(Modifier.height(80.dp))
+        }
+    }
+}
+
+@Composable
+private fun DateRow(
+    label: String,
+    millis: Long?,
+    format: SimpleDateFormat,
+    onEdit: () -> Unit
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(
+            text = "$label: ",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        if (millis != null) {
+            Text(
+                text = format.format(Date(millis)),
+                style = MaterialTheme.typography.bodySmall
+            )
+        } else {
+            Text(
+                text = "Not set",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+            )
+        }
+        Spacer(Modifier.weight(1f))
+        IconButton(onClick = onEdit) {
+            Icon(
+                Icons.Default.Edit,
+                contentDescription = "Edit $label date",
+                modifier = Modifier.padding(0.dp)
+            )
         }
     }
 }
