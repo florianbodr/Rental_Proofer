@@ -17,6 +17,9 @@ interface RentalSessionDao {
     @Query("SELECT * FROM rental_sessions WHERE id = :id")
     fun getSessionById(id: Long): Flow<RentalSession?>
 
+    @Query("SELECT * FROM rental_sessions WHERE id = :id")
+    suspend fun getSessionByIdOnce(id: Long): RentalSession?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSession(session: RentalSession): Long
 

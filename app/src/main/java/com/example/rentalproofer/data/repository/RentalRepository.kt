@@ -12,6 +12,7 @@ class RentalRepository(
 ) {
     fun getAllSessions() = sessionDao.getAllSessions()
     fun getSessionById(id: Long) = sessionDao.getSessionById(id)
+    suspend fun getSessionByIdOnce(id: Long) = sessionDao.getSessionByIdOnce(id)
     fun getPhotosForSession(sessionId: Long) = photoDao.getPhotosForSession(sessionId)
 
     suspend fun insertSession(session: RentalSession): Long = sessionDao.insertSession(session)

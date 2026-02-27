@@ -31,10 +31,20 @@ class CameraViewModel(application: Application) : AndroidViewModel(application) 
 
     fun savePhoto(sessionId: Long, filePath: String) {
         viewModelScope.launch {
+            val currentType = _photoType.value
             repository.insertPhoto(
-                RentalPhoto(sessionId = sessionId, filePath = filePath, type = _photoType.value)
+                RentalPhoto(sessionId = sessionId, filePath = filePath, type = currentType)
             )
             _photosTakenCount.value++
+
+            val session = repository.getSessionByIdOnce(sessionId) ?: return@launch
+            val now = System.currentTimeMillis()
+            when {
+                currentType == PhotoType.BEFORE && session.beforeDate == null ->
+                    repository.updateSession(session.copy(beforeDate = now))
+                currentType == PhotoType.AFTER && session.afterDate == null ->
+                    repository.updateSession(session.copy(afterDate = now))
+            }
         }
     }
 }
