@@ -11,6 +11,7 @@ import com.example.rentalproofer.ui.screens.photoviewer.PhotoViewerScreen
 import com.example.rentalproofer.ui.screens.sessiondetail.SessionDetailScreen
 import com.example.rentalproofer.ui.screens.sessionform.SessionFormScreen
 import com.example.rentalproofer.ui.screens.sessionlist.SessionListScreen
+import com.example.rentalproofer.ui.screens.settings.SettingsScreen
 
 @Composable
 fun AppNavGraph() {
@@ -19,8 +20,12 @@ fun AppNavGraph() {
         composable("session_list") {
             SessionListScreen(
                 onCreateSession = { navController.navigate("session_form") },
-                onOpenSession = { sessionId -> navController.navigate("session_detail/$sessionId") }
+                onOpenSession = { sessionId -> navController.navigate("session_detail/$sessionId") },
+                onOpenSettings = { navController.navigate("settings") }
             )
+        }
+        composable("settings") {
+            SettingsScreen(onBack = { navController.popBackStack() })
         }
         composable(
             route = "session_form?sessionId={sessionId}",

@@ -28,4 +28,10 @@ interface RentalSessionDao {
 
     @Delete
     suspend fun deleteSession(session: RentalSession)
+
+    @Query(
+        """SELECT * FROM rental_sessions
+           WHERE createdAt + (deletionPeriodDays * 86400000) < :nowMillis"""
+    )
+    suspend fun getExpiredSessions(nowMillis: Long): List<RentalSession>
 }

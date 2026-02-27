@@ -1,5 +1,6 @@
 package com.example.rentalproofer.data.repository
 
+import android.content.Context
 import com.example.rentalproofer.data.db.RentalPhotoDao
 import com.example.rentalproofer.data.db.RentalSessionDao
 import com.example.rentalproofer.data.model.RentalPhoto
@@ -8,7 +9,8 @@ import java.io.File
 
 class RentalRepository(
     private val sessionDao: RentalSessionDao,
-    private val photoDao: RentalPhotoDao
+    private val photoDao: RentalPhotoDao,
+    private val context: Context
 ) {
     fun getAllSessions() = sessionDao.getAllSessions()
     fun getSessionById(id: Long) = sessionDao.getSessionById(id)
@@ -17,7 +19,12 @@ class RentalRepository(
 
     suspend fun insertSession(session: RentalSession): Long = sessionDao.insertSession(session)
     suspend fun updateSession(session: RentalSession) = sessionDao.updateSession(session)
-    suspend fun deleteSession(session: RentalSession) = sessionDao.deleteSession(session)
+
+    suspend fun deleteSession(session: RentalSession) {
+        sessionDao.deleteSession(session)
+        val sessionDir = File(context.getExternalFilesDir(null), "session_${session.id}")
+        sessionDir.deleteRecursively()
+    }
 
     suspend fun insertPhoto(photo: RentalPhoto): Long = photoDao.insertPhoto(photo)
 
@@ -29,4 +36,11 @@ class RentalRepository(
     }
 
     suspend fun getPhotoById(id: Long): RentalPhoto? = photoDao.getPhotoById(id)
+
+    suspend fun deleteExpiredSessions() {
+        val expired = sessionDao.getExpiredSessions(System.currentTimeMillis())
+        for (session in expired) {
+            deleteSession(session)
+        }
+    }
 }

@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.rentalproofer.RentalProoferApp
+import com.example.rentalproofer.data.model.DeletionPeriod
 import com.example.rentalproofer.data.model.RentalSession
 import com.example.rentalproofer.util.getLastLocation
 import com.example.rentalproofer.util.reverseGeocode
@@ -24,13 +25,23 @@ data class SessionFormState(
     val address: String? = null,
     val beforeDate: Long? = null,
     val afterDate: Long? = null,
-    val isFetchingLocation: Boolean = false
+    val isFetchingLocation: Boolean = false,
+    val deletionPeriod: DeletionPeriod = DeletionPeriod.SIX_MONTHS
 )
 
 class SessionFormViewModel(application: Application) : AndroidViewModel(application) {
-    private val repository = (application as RentalProoferApp).repository
+    private val app = application as RentalProoferApp
+    private val repository = app.repository
+    private val settingsManager = app.settingsManager
     private val _state = MutableStateFlow(SessionFormState())
     val state: StateFlow<SessionFormState> = _state.asStateFlow()
+
+    fun loadDefaults() {
+        _state.value = SessionFormState(
+            company = settingsManager.defaultCompany,
+            deletionPeriod = settingsManager.defaultDeletionPeriod
+        )
+    }
 
     fun loadSession(sessionId: Long) {
         viewModelScope.launch {
@@ -50,7 +61,8 @@ class SessionFormViewModel(application: Application) : AndroidViewModel(applicat
                     address = session.address,
                     beforeDate = session.beforeDate,
                     afterDate = session.afterDate,
-                    locationText = locationDisplay
+                    locationText = locationDisplay,
+                    deletionPeriod = DeletionPeriod.fromDays(session.deletionPeriodDays)
                 )
             }
         }
@@ -59,6 +71,7 @@ class SessionFormViewModel(application: Application) : AndroidViewModel(applicat
     fun updateName(name: String) { _state.value = _state.value.copy(name = name) }
     fun updateCompany(c: String) { _state.value = _state.value.copy(company = c) }
     fun updateNotes(n: String) { _state.value = _state.value.copy(notes = n) }
+    fun updateDeletionPeriod(p: DeletionPeriod) { _state.value = _state.value.copy(deletionPeriod = p) }
 
     fun fetchLocation(context: Context) {
         viewModelScope.launch {
@@ -95,7 +108,8 @@ class SessionFormViewModel(application: Application) : AndroidViewModel(applicat
                 longitude = s.longitude,
                 address = s.address,
                 beforeDate = s.beforeDate,
-                afterDate = s.afterDate
+                afterDate = s.afterDate,
+                deletionPeriodDays = s.deletionPeriod.days
             )
             repository.updateSession(session)
             editingId
@@ -109,7 +123,8 @@ class SessionFormViewModel(application: Application) : AndroidViewModel(applicat
                     longitude = s.longitude,
                     address = s.address,
                     beforeDate = s.beforeDate,
-                    afterDate = s.afterDate
+                    afterDate = s.afterDate,
+                    deletionPeriodDays = s.deletionPeriod.days
                 )
             )
         }

@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
@@ -46,12 +47,22 @@ import java.util.Locale
 fun SessionListScreen(
     onCreateSession: () -> Unit,
     onOpenSession: (Long) -> Unit,
+    onOpenSettings: () -> Unit,
     viewModel: SessionListViewModel = viewModel()
 ) {
     val sessions by viewModel.sessions.collectAsState()
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Rental Proofer") }) },
+        topBar = {
+            TopAppBar(
+                title = { Text("Rental Proofer") },
+                actions = {
+                    IconButton(onClick = onOpenSettings) {
+                        Icon(Icons.Default.Settings, contentDescription = "Settings")
+                    }
+                }
+            )
+        },
         floatingActionButton = {
             FloatingActionButton(onClick = onCreateSession) {
                 Icon(Icons.Default.Add, contentDescription = "New Session")

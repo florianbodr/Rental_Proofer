@@ -14,5 +14,6 @@ data class RentalSession(
     val createdAt: Long = System.currentTimeMillis(),
     val beforeDate: Long? = null,
     val afterDate: Long? = null,
-    val address: String? = null
+    val address: String? = null,
+    val deletionPeriodDays: Int = 180
 )

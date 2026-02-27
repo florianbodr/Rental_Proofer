@@ -16,6 +16,10 @@ class SessionListViewModel(application: Application) : AndroidViewModel(applicat
     val sessions: StateFlow<List<RentalSession>> = repository.getAllSessions()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    init {
+        viewModelScope.launch { repository.deleteExpiredSessions() }
+    }
+
     fun deleteSession(session: RentalSession) {
         viewModelScope.launch {
             repository.deleteSession(session)

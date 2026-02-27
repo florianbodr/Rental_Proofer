@@ -21,10 +21,14 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -43,6 +47,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.rentalproofer.data.model.DeletionPeriod
 import kotlinx.coroutines.launch
 
 private fun isLocationEnabled(context: Context): Boolean {
@@ -65,7 +70,11 @@ fun SessionFormScreen(
     var showLocationDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(sessionId) {
-        sessionId?.let { viewModel.loadSession(it) }
+        if (sessionId != null) {
+            viewModel.loadSession(sessionId)
+        } else {
+            viewModel.loadDefaults()
+        }
     }
 
     val locationPermLauncher = rememberLauncherForActivityResult(
@@ -172,6 +181,36 @@ fun SessionFormScreen(
                         CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                     } else {
                         Icon(Icons.Default.LocationOn, "Get Location")
+                    }
+                }
+            }
+            var deletionExpanded by remember { mutableStateOf(false) }
+            ExposedDropdownMenuBox(
+                expanded = deletionExpanded,
+                onExpandedChange = { deletionExpanded = it }
+            ) {
+                OutlinedTextField(
+                    value = state.deletionPeriod.label,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Auto-delete after") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = deletionExpanded) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                )
+                ExposedDropdownMenu(
+                    expanded = deletionExpanded,
+                    onDismissRequest = { deletionExpanded = false }
+                ) {
+                    DeletionPeriod.entries.forEach { period ->
+                        DropdownMenuItem(
+                            text = { Text(period.label) },
+                            onClick = {
+                                viewModel.updateDeletionPeriod(period)
+                                deletionExpanded = false
+                            }
+                        )
                     }
                 }
             }
